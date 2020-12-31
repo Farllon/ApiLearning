@@ -10,7 +10,7 @@ namespace ProductCatalog.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(@"Server=localhost;Database=catalogoProduto;Trusted_Connection=true;");
+            optionsBuilder.UseSqlServer(@"Server=localhost;Database=ptdctl;User ID=SA;Password=1Q2W3E$&%");
         }
     }
 }
