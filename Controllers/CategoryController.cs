@@ -12,48 +12,46 @@ namespace ProductCatalog.Controllers
     [Route("v1/categories")]
     public class CategoryController : ControllerBase
     {
+        private StoreDataContext _context;
+
+        public CategoryController(StoreDataContext context)
+        {
+            _context = context;
+        }
+
         [Route("")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Category>>> Get([FromServices] StoreDataContext context)
+        public async Task<ActionResult<IEnumerable<Category>>> Get()
         {
-            var categories = await context.Categories.ToListAsync();
+            var categories = await _context.Categories.ToListAsync();
             return categories;
         }
 
         [Route("{id}")]
         [HttpGet]
-        public async Task<ActionResult<Category>> GetCategory(
-            [FromServices] StoreDataContext context,
-            int id
-        )
+        public async Task<ActionResult<Category>> GetCategory(int id)
         {
             // Find() ainda não funciona com AsNoTracking
-            var category = await context.Categories.AsNoTracking().Where(x => x.Id == id).FirstOrDefaultAsync();
+            var category = await _context.Categories.AsNoTracking().Where(x => x.Id == id).FirstOrDefaultAsync();
             return category;
         }
 
         [Route("{id}/products")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts(
-            [FromServices] StoreDataContext context,
-            int id
-        )
+        public async Task<ActionResult<IEnumerable<Product>>> GetProducts(int id)
         {
-            var products = await context.Products.AsNoTracking().Where(x => x.Category.Id == id).ToListAsync();
+            var products = await _context.Products.AsNoTracking().Where(x => x.Category.Id == id).ToListAsync();
             return products;
         }
 
         [Route("")]
         [HttpPost]
-        public async Task<ActionResult<Category>> Post(
-            [FromServices] StoreDataContext context,
-            [FromBody] Category category
-        )
+        public async Task<ActionResult<Category>> Post([FromBody] Category category)
         {
             if (ModelState.IsValid)
             {
-                context.Categories.Add(category);
-                await context.SaveChangesAsync();
+                _context.Categories.Add(category);
+                await _context.SaveChangesAsync();
                 return category;
             }
             else
@@ -64,15 +62,12 @@ namespace ProductCatalog.Controllers
 
         [Route("")]
         [HttpPut]
-        public async Task<ActionResult<Category>> Put(
-            [FromServices] StoreDataContext context,
-            [FromBody] Category category
-        )
+        public async Task<ActionResult<Category>> Put([FromBody] Category category)
         {
             if (ModelState.IsValid)
             {
-                context.Entry<Category>(category).State = EntityState.Modified;
-                await context.SaveChangesAsync();
+                _context.Entry<Category>(category).State = EntityState.Modified;
+                await _context.SaveChangesAsync();
                 return category;
             }
             else
@@ -83,15 +78,12 @@ namespace ProductCatalog.Controllers
 
         [Route("")]
         [HttpDelete]
-        public async Task<ActionResult<Category>> Delete(
-            [FromServices] StoreDataContext context,
-            [FromBody] Category category
-        )
+        public async Task<ActionResult<Category>> Delete([FromBody] Category category)
         {
             if (ModelState.IsValid)
             {
-                context.Categories.Remove(category);
-                await context.SaveChangesAsync();
+                _context.Categories.Remove(category);
+                await _context.SaveChangesAsync();
                 return category;
             }
             else

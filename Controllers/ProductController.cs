@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductCatalog.Data;
 using ProductCatalog.Models;
+using ProductCatalog.Repositories;
 using ProductCatalog.ViewModels;
 using ProductCatalog.ViewModels.ProductViewModels;
 
@@ -15,45 +16,30 @@ namespace ProductCatalog.Controllers
     [Route("v1/products")]
     public class ProductController : ControllerBase
     {
+        private ProductRepository _repository;
+
+        public ProductController(ProductRepository repository)
+        {
+            _repository = repository;
+        }
+
         [Route("")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ListProductViewModel>>> Get(
-            [FromServices] StoreDataContext context
-        )
+        public async Task<ActionResult<IEnumerable<ListProductViewModel>>> Get()
         {
-            var products = await context.Products
-                .Include(x => x.Category)
-                .Select(x => new ListProductViewModel
-                {
-                    Id = x.Id,
-                    Title = x.Title,
-                    Price = x.Price,
-                    Category = x.Category.Title,
-                    CategoryId = x.CategoryId
-                })
-                .AsNoTracking()
-                .ToListAsync();
-
-            return products;
+            return await _repository.Get();
         }
 
         [Route("{id}")]
         [HttpGet]
-        public async Task<ActionResult<Product>> Get(
-            [FromServices] StoreDataContext context,
-            int id
-        )
+        public async Task<ActionResult<Product>> Get(int id)
         {
-            var product = await context.Products.AsNoTracking().Where(x => x.Id == id).FirstOrDefaultAsync();
-            return product;
+            return await _repository.Get(id);
         }
 
         [Route("")]
         [HttpPost]
-        public async Task<ActionResult<ResultViewModel>> Post(
-            [FromServices] StoreDataContext context,
-            [FromBody] EditorProductViewModel model
-        )
+        public async Task<ActionResult<ResultViewModel>> Post([FromBody] EditorProductViewModel model)
         {
             model.Validate();
             if (model.Invalid)
@@ -76,8 +62,7 @@ namespace ProductCatalog.Controllers
                 Quantity = model.Quantity
             };
 
-            context.Products.Add(product);
-            await context.SaveChangesAsync();
+            await _repository.Save(product);
 
             return new ResultViewModel
             {
@@ -89,10 +74,7 @@ namespace ProductCatalog.Controllers
 
         [Route("")]
         [HttpPut]
-        public async Task<ActionResult<ResultViewModel>> Put(
-            [FromServices] StoreDataContext context,
-            [FromBody] EditorProductViewModel model
-        )
+        public async Task<ActionResult<ResultViewModel>> Put([FromBody] EditorProductViewModel model)
         {
             model.Validate();
             if (model.Invalid)
@@ -103,18 +85,17 @@ namespace ProductCatalog.Controllers
                     Data = model.Notifications
                 };
             
-            var product = await context.Products.FindAsync(model.Id);
+            var product = await _repository.Get(model.Id);
             
-            product.Title = model.Title;
-            product.CategoryId = model.CategoryId;
-            product.Description = model.Description;
-            product.Image = model.Image;
-            product.LastUpdateDate = DateTime.Now;
-            product.Price = model.Price;
-            product.Quantity = model.Quantity;
+            product.Value.Title = model.Title;
+            product.Value.CategoryId = model.CategoryId;
+            product.Value.Description = model.Description;
+            product.Value.Image = model.Image;
+            product.Value.LastUpdateDate = DateTime.Now;
+            product.Value.Price = model.Price;
+            product.Value.Quantity = model.Quantity;
 
-            context.Entry<Product>(product).State = EntityState.Modified;
-            await context.SaveChangesAsync();
+            await _repository.Update(product.Value);
 
             return new ResultViewModel
             {

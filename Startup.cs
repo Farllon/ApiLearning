@@ -5,7 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
 using ProductCatalog.Data;
+using ProductCatalog.Repositories;
 
 namespace ProductCatalog
 {
@@ -23,8 +25,20 @@ namespace ProductCatalog
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<StoreDataContext>();
-            services.AddScoped<StoreDataContext, StoreDataContext>();
+            services.AddSingleton<StoreDataContext>();
+            services.AddTransient<ProductRepository, ProductRepository>();
+            services.AddResponseCompression();
             services.AddControllers();
+            services.AddSwaggerGen(x => {
+                x.SwaggerDoc(
+                    "v1",
+                    new OpenApiInfo()
+                    {
+                        Title = "My API",
+                        Version = "v1"
+                    }
+                );
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -42,6 +56,13 @@ namespace ProductCatalog
             app.UseEndpoints(endpoints => 
             {
                 endpoints.MapControllers();
+            });
+
+            app.UseResponseCompression();
+
+            app.UseSwagger();
+            app.UseSwaggerUI( x => {
+                x.SwaggerEndpoint("/swagger/v1/swagger.json", "My API v1");
             });
         }
     }
